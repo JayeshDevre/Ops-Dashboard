@@ -1,6 +1,6 @@
 # Ops Dashboard (Prometheus + Grafana + Loki)
 
-This project is a **simple Node.js (Express) app** instrumented with:
+This project is a **Node.js (Express) app** instrumented with:
 
 - **Prometheus**: metrics scraping from `GET /metrics`
 - **Grafana**: dashboards for metrics + logs
