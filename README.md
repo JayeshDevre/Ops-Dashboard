@@ -1,10 +1,12 @@
-# Ops Dashboard — Monitoring with Prometheus, Grafana & Loki
+# Ops Dashboard: Monitoring with Prometheus, Grafana & Loki
 
 A Node.js Express application instrumented with **Prometheus** for metrics, **Grafana** for dashboards, and **Loki** for centralized logging.
 
-### Example Dashboard
+### Example Screenshots
 
 ![Grafana Dashboard](docs/screenshots/02-grafana-example-dashboard.png)
+
+![Prometheus CPU Graph](docs/screenshots/03-prometheus-cpu-graph.png)
 
 ---
 
