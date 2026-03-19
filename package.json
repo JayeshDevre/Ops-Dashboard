@@ -1,0 +1,23 @@
+{
+  "name": "prod-server",
+  "version": "1.0.0",
+  "description": "Basic Express app for monitoring demo",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^5.2.1",
+    "prom-client": "^15.1.3",
+    "response-time": "^2.3.4",
+    "winston": "^3.19.0",
+    "winston-loki": "^6.1.4"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.14"
+  }
+}
