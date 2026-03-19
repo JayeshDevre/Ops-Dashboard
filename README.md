@@ -1,20 +1,6 @@
-# Ops Dashboard (Prometheus + Grafana + Loki)
+# Ops Dashboard — Node.js Monitoring with Prometheus, Grafana & Loki
 
-This project is a **Node.js (Express) app** instrumented with:
-
-- **Prometheus**: metrics scraping from `GET /metrics`
-- **Grafana**: dashboards for metrics + logs
-- **Loki**: centralized logs (Winston → Loki)
-
----
-
-## What you built
-
-- A Node.js service exposing **app + runtime metrics** via Prometheus.
-- A **load/error generator** endpoint (`/slow`) to test dashboards.
-- A Grafana environment to visualize:
-  - **Metrics** (Prometheus)
-  - **Logs** (Loki)
+A Node.js Express application instrumented with **Prometheus** for metrics, **Grafana** for dashboards, and **Loki** for centralized logging.
 
 ### Example Dashboard
 
@@ -24,75 +10,64 @@ This project is a **Node.js (Express) app** instrumented with:
 
 ## Prerequisites
 
-- Node.js + npm
-- Docker (optional, for Prometheus/Grafana/Loki)
+- Basic knowledge of **Node.js** and **Express** framework
+- Basic to intermediate knowledge of **Docker** and containerization
+- [Docker](https://www.docker.com/) installed and running
+- [Node.js](https://nodejs.org/) + npm installed
 
 ---
 
-## Project overview
+## Installation and Setup
 
-- **App**: `index.js`
-- **Metrics endpoint**: `GET /metrics` (Prometheus scrapes this)
-- **Test routes**:
-  - `GET /` (quick response)
-  - `GET /slow` (random delay, sometimes throws an error)
-- **Prometheus config**: `prometheus-config.yml`
-- **Docker compose**: `docker-compose.yml` (Prometheus)
-
----
-
-## 1) Install dependencies
+### 1. Clone and Install
 
 ```bash
+git clone https://github.com/JayeshDevre/Ops-Dashboard.git
+cd Ops-Dashboard
 npm install
 ```
 
----
+### 2. Setup Prometheus
 
-## 2) Start the Node app
+Create a `prometheus-config.yml` file and add the following configuration. Replace `<NODEJS_SERVER_ADDRESS>` with the actual address of your Node.js app.
 
-```bash
-npm start
+```yaml
+global:
+  scrape_interval: 4s
+
+scrape_configs:
+  - job_name: prometheus
+    static_configs:
+      - targets: ["<NODEJS_SERVER_ADDRESS>"]
 ```
 
-App runs on `http://localhost:8000`.
+> **Tip:** Use `localhost:8000` if running everything on the host, or `host.docker.internal:8000` if Prometheus runs inside Docker and the Node app runs on the host.
 
----
-
-## 3) Start Prometheus (Docker Compose)
+Start the Prometheus server using Docker Compose:
 
 ```bash
 docker-compose up -d
 ```
 
-Prometheus runs on `http://localhost:9090`.
+Prometheus is now up and running at [http://localhost:9090](http://localhost:9090).
 
-### Prometheus scrape target
+Verify the scrape target status at [http://localhost:9090/targets](http://localhost:9090/targets).
 
-Update `prometheus-config.yml` to match where your Node app is reachable from Prometheus.
-Examples:
-
-- `localhost:8000` (Prometheus running on the same host network as the app)
-- `host.docker.internal:8000` (Prometheus running in Docker and the app on the host)
-- `<YOUR_NODE_HOST>:8000` (replace with your node host/IP)
-
-Check scrape status in Prometheus:
-
-- `http://localhost:9090/targets`
-
----
-
-## 4) Start Loki
-
-If you already run Loki elsewhere, use that.
-
-### Option A: Run Loki with Docker
+### 3. Setup Grafana
 
 ```bash
-docker run -d --name loki -p 3100:3100 grafana/loki:2.9.2 -config.file=/etc/loki/local-config.yaml
+docker run -d -p 3000:3000 --name=grafana grafana/grafana-oss
 ```
 
-Loki readiness check:
+Grafana is now running at [http://localhost:3000](http://localhost:3000) (default login: `admin` / `admin`).
+
+### 4. Setup Loki
+
+```bash
+docker run -d --name=loki -p 3100:3100 grafana/loki
+```
+
+Verify Loki is ready:
 
 ```bash
 curl http://localhost:3100/ready
@@ -100,37 +75,40 @@ curl http://localhost:3100/ready
 
 ---
 
-## 5) Start Grafana
+## Running the App
 
 ```bash
-docker run -d -p 3000:3000 --name grafana grafana/grafana-oss
+npm start        # production
+npm run dev      # development (with nodemon)
 ```
 
-Grafana runs on `http://localhost:3000` (default login: `admin` / `admin`).
+The app runs at [http://localhost:8000](http://localhost:8000).
+
+### Available Routes
+
+| Route | Description |
+|-------|-------------|
+| `GET /` | Quick health check response |
+| `GET /slow` | Simulates a heavy task (random delay, sometimes throws errors) |
+| `GET /metrics` | Prometheus metrics endpoint |
 
 ---
 
-## 6) Configure Grafana data sources
+## Configure Grafana Data Sources
 
-### Prometheus
+Once Grafana is running, add these data sources:
 
-- If Grafana can reach Prometheus via localhost: `http://localhost:9090`
-- If Grafana runs in Docker and Prometheus is on the host: `http://host.docker.internal:9090`
+**Prometheus**
+- URL: `http://localhost:9090` (or `http://host.docker.internal:9090` from Docker)
 
-### Loki
-
-- If Grafana can reach Loki via localhost: `http://localhost:3100`
-- If Grafana runs in Docker and Loki is on the host: `http://host.docker.internal:3100`
+**Loki**
+- URL: `http://localhost:3100` (or `http://host.docker.internal:3100` from Docker)
 
 ---
 
-## 7) Verify metrics
+## Metrics & Queries
 
-Open:
-
-- `http://localhost:8000/metrics`
-
-Example PromQL queries in Prometheus/Grafana:
+### PromQL Examples
 
 ```promql
 up
@@ -139,18 +117,30 @@ process_resident_memory_bytes
 irate(process_cpu_user_seconds_total[2m]) * 100
 ```
 
-Custom app metrics (examples):
+### Custom App Metrics
 
-```promql
-http_requests_total
-http_request_duration_seconds_bucket
-heavy_tasks_completed_total
-heavy_tasks_failed_total
-heavy_task_duration_seconds_bucket
-active_requests
+| Metric | Type | Description |
+|--------|------|-------------|
+| `http_requests_total` | Counter | Total HTTP requests |
+| `http_request_duration_seconds` | Histogram | Request duration in seconds |
+| `heavy_tasks_completed_total` | Counter | Heavy tasks completed (success/error) |
+| `heavy_tasks_failed_total` | Counter | Heavy tasks that failed |
+| `heavy_task_duration_seconds` | Histogram | Duration of heavy tasks |
+| `active_requests` | Gauge | Requests currently in progress |
+
+### LogQL Examples
+
+```logql
+{}                                    # all logs
+{level="error"}                       # error logs only
+count_over_time({level="info"}[5m])   # log count over time (for time series panels)
 ```
 
-Generate traffic:
+> **Note:** Loki queries return log lines (strings). Use **Logs** or **Table** visualization in Grafana. For **Time series** panels, use metric queries like `count_over_time(...)`.
+
+---
+
+## Generate Test Traffic
 
 ```bash
 curl http://localhost:8000/
@@ -159,42 +149,20 @@ curl http://localhost:8000/slow
 
 ---
 
-## 8) Verify logs in Loki
+## Troubleshooting
 
-### Important
-
-Loki log queries return **log lines (strings)**. In Grafana, use **Logs** visualization (or Table).
-If you choose **Time series**, you must use a metric query like `count_over_time(...)`.
-
-### LogQL examples
-
-Show all logs:
-
-```logql
-{}
-```
-
-Show error logs:
-
-```logql
-{level="error"}
-```
-
-Count logs (time series):
-
-```logql
-count_over_time({level="info"}[5m])
-```
+| Problem | Solution |
+|---------|----------|
+| Grafana shows "No data" for Loki | Use **Logs** visualization, increase time range to **Last 1 hour**, verify Loki is ready with `curl http://localhost:3100/ready` |
+| Prometheus target is DOWN | Verify the Node app is running on port 8000 and the target host in `prometheus-config.yml` is reachable from Prometheus |
+| Loki returns 404 at root URL | This is normal — Loki is an API server. Use `/ready` or `/metrics` to check health |
 
 ---
 
-## Common troubleshooting
+## Tech Stack
 
-- **Grafana shows “No data” for Loki logs**:
-  - Make sure you’re using **Logs** visualization
-  - Increase time range to **Last 1 hour**
-  - Verify Loki is ready: `curl http://localhost:3100/ready`
-- **Prometheus target is DOWN**:
-  - Verify app is running on port 8000
-  - Verify `prometheus-config.yml` target host is reachable from Prometheus container/host
-
+- **Runtime:** Node.js + Express
+- **Metrics:** Prometheus + prom-client
+- **Logging:** Winston + winston-loki → Loki
+- **Visualization:** Grafana
+- **Containerization:** Docker / Docker Compose
